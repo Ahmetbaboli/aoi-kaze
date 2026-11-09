@@ -1,0 +1,26 @@
+---
+title: 'How This Site Works'
+description: 'Where does the catalog data come from, where is your list stored and what happens when AniList is down? A short look behind the scenes.'
+date: '2026-01-12'
+tags: ['Architecture', 'Getting Started']
+---
+
+This site is a **discovery and tracking tool** for anime, manga and manhwa. It does not host content; it only helps you find titles, see the airing schedule and keep your own list.
+
+## Where does the data come from?
+
+Titles, covers, scores and the airing schedule come from the [AniList](https://anilist.co) GraphQL API. The server caches every request for an hour, which avoids needless load on AniList and keeps pages fast.
+
+## What if AniList is down?
+
+When the source cannot be reached, the page **does not show made-up data**. Instead you see a notice saying the data source is not responding. Failed responses are not cached, so the page recovers on its own once the source is back.
+
+## Where is my list?
+
+Your tracking status and favorites are stored only in your **browser** (`localStorage`). You do not need an account. If you like, you can export your list as JSON and import it on another device.
+
+## Privacy
+
+- Analytics, if enabled, is cookie-free.
+- Fonts are bundled with the project; no third-party font requests are made.
+- Trailers are not fetched from YouTube until you click "load".

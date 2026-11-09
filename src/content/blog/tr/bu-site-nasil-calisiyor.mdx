@@ -1,0 +1,26 @@
+---
+title: 'Bu Site Nasıl Çalışıyor?'
+description: 'Katalog verisi nereden geliyor, listen nerede saklanıyor ve AniList çalışmadığında ne oluyor? Sitenin arka planına kısa bir bakış.'
+date: '2026-01-12'
+tags: ['Mimari', 'Başlangıç']
+---
+
+Bu site anime, manga ve manhwa için bir **keşif ve takip aracı**. İçerik yayınlamaz; yalnızca eserleri bulmana, yayın takvimini görmene ve kendi listeni tutmana yardım eder.
+
+## Veri nereden geliyor?
+
+Başlıklar, kapaklar, puanlar ve yayın takvimi [AniList](https://anilist.co) GraphQL API'sinden gelir. Sunucu her isteği bir saat boyunca önbelleğe alır; böylece hem AniList'e gereksiz yük bindirmez hem de sayfalar hızlı açılır.
+
+## AniList çalışmazsa ne olur?
+
+Kaynağa ulaşılamadığında sayfa **uydurma veri göstermez**. Bunun yerine veri kaynağının yanıt vermediğini açıkça söyleyen bir uyarı görürsün. Hatalı yanıtlar önbelleğe alınmaz, bu yüzden kaynak düzeldiğinde sayfa kendiliğinden toparlanır.
+
+## Listen nerede?
+
+Takip durumların ve favorilerin yalnızca **tarayıcında** (`localStorage`) saklanır. Hesap açmana gerek yoktur. İstersen listeni JSON olarak dışa aktarıp başka bir cihazda içe aktarabilirsin.
+
+## Gizlilik
+
+- Analitik kullanılıyorsa çerezsiz çalışır.
+- Yazı tipleri projeye gömülüdür; üçüncü taraf font isteği yapılmaz.
+- Fragmanlar, sen "yükle" diyene kadar YouTube'dan çekilmez.

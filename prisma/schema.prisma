@@ -1,0 +1,526 @@
+// Aoi Kaze veri modeli. Geliştirme ve canlı ortam aynı sağlayıcıyı (PostgreSQL) kullanır;
+// migration'lar bu yüzden tek bir sağlayıcıya kilitlidir. Yerel veritabanı: `docker compose up -d db`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ------------------------------ Enum'lar ------------------------------ */
+
+enum Role {
+  USER
+  ADMIN
+}
+
+/// Bölüm kaynağı türü: altyazılı ya da dublajlı.
+enum AudioType {
+  SUB
+  DUB
+}
+
+/// AniList'teki eser türü. Liste girdileri manga/manhwa'ya da bağlanabilsin diye anime tablosunda tutulur.
+enum MediaKind {
+  ANIME
+  MANGA
+  MANHWA
+}
+
+enum ListStatus {
+  WATCHING
+  COMPLETED
+  PLANNING
+  DROPPED
+  PAUSED
+}
+
+enum SkipType {
+  INTRO
+  OUTRO
+}
+
+enum SkipSource {
+  ANISKIP
+  USER
+}
+
+enum ReportTarget {
+  COMMENT
+  SOURCE
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+/* ------------------------- Kullanıcı ve kimlik (Auth.js) ------------------------- */
+
+model User {
+  id            String    @id @default(cuid())
+  /// Auth.js alanları: ad, e-posta, e-posta doğrulama zamanı ve avatar (`image`).
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  username      String?   @unique
+  discordId     String?   @unique
+  role          Role      @default(USER)
+  locale        String    @default("tr")
+  defaultAudio  AudioType @default(SUB)
+  autoSkip      Boolean   @default(false)
+  autoNext      Boolean   @default(true)
+  /// Altyazı boyutu, rengi, arka plan opaklığı vb.
+  subtitlePrefs Json?
+  profilePublic Boolean   @default(true)
+  /// Profil: kısa biyografi (en fazla 200 karakter; küfür filtresinden geçer).
+  bio           String?
+  /// Seçilen avatar/banner. Yalnızca AniList CDN görselleri (s4.anilist.co) kabul edilir: dosya yükleme yok,
+  /// böylece uygunsuz görsel yüklenemez. avatarUrl boşsa sağlayıcı avatarı (image) kullanılır.
+  avatarUrl     String?
+  bannerUrl     String?
+  /// Kullanıcı adı en son ne zaman değiştirildi (30 günde bir sınırı için).
+  usernameChangedAt DateTime?
+  /// Takılı kozmetikler (oyun ödülleri). Değerler GameReward.item ile aynıdır; yalnızca sahip olunan takılabilir.
+  equippedFrame String?
+  equippedName  String?
+  equippedTitle String?
+  createdAt     DateTime  @default(now())
+
+  accounts          Account[]
+  sessions          Session[]
+  watchProgress     WatchProgress[]
+  listEntries       ListEntry[]
+  comments          Comment[]
+  commentLikes      CommentLike[]
+  reactions         Reaction[]
+  episodeRatings    EpisodeRating[]
+  animeFollows      AnimeFollow[]
+  groupFollows      GroupFollow[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+  skipTimeVotes     SkipTimeVote[]
+  reports           Report[]
+  gamePlays         GamePlay[]
+  gameRewards       GameReward[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/* ------------------------------ Katalog ------------------------------ */
+
+/// Sitede ilgilenilen eser. AniList metadata'sı kopyalanmaz; satır, ilk ihtiyaç anında
+/// `anilistId` ile upsert edilir (liste girdisi, takip, bölüm kaydı vb.). AniList'te olmayan
+/// açık lisanslı demo filmlerin `anilistId` değeri boştur.
+model Anime {
+  id         String    @id @default(cuid())
+  anilistId  Int?      @unique
+  malId      Int?
+  kind       MediaKind @default(ANIME)
+  slug       String    @unique
+  /// Cache amaçlı başlık: AniList'e ulaşılamasa da listeler ve bildirimler okunur kalır.
+  title      String
+  /// Cache amaçlı kapak görseli ve vurgu rengi (Listem kartları için; AniList'ten kopyalanır).
+  coverUrl   String?
+  color      String?
+  /// Toplam bölüm (anime) ya da bölüm/chapter (manga) sayısı: "tamamladım" denince XP hesabı için.
+  totalUnits Int?
+  /// AniList türleri (istatistikteki tür dağılımı ve rozetler için).
+  genres     String[]  @default([])
+  synopsisTr String?
+  synopsisEn String?
+  hasDub     Boolean   @default(false)
+  maxQuality String?
+  featured   Boolean   @default(false)
+  featuredOrder Int?
+  createdAt  DateTime  @default(now())
+
+  episodes     Episode[]
+  listEntries  ListEntry[]
+  followers    AnimeFollow[]
+
+  @@index([featured, featuredOrder])
+}
+
+model Episode {
+  id        String    @id @default(cuid())
+  animeId   String
+  number    Int
+  title     String?
+  thumbnail String?
+  airedAt   DateTime?
+  isFiller  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  anime     Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  sources   EpisodeSource[]
+  skipTimes SkipTime[]
+  progress  WatchProgress[]
+  comments  Comment[]
+  reactions Reaction[]
+  ratings   EpisodeRating[]
+
+  @@unique([animeId, number])
+}
+
+/// Video sağlayıcıları (youtube, blender-cdn...). Yalnızca `licensed = true` olanlara kaynak bağlanabilir.
+model ProviderConfig {
+  id       String  @id @default(cuid())
+  key      String  @unique
+  name     String
+  /// Sağlayıcının içeriği lisanslı/açık lisanslı mı? EpisodeSource yalnızca true olanlara bağlanabilir
+  /// (uygulamada ve veritabanında tetikleyiciyle zorunlu kılınır).
+  licensed Boolean @default(false)
+  enabled  Boolean @default(true)
+
+  sources EpisodeSource[]
+}
+
+model TranslatorGroup {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  logoUrl     String?
+  description String?
+  links       Json?
+
+  sources   EpisodeSource[]
+  followers GroupFollow[]
+  subtitles SubtitleTrack[]
+}
+
+/// Bir kaynağa bağlı altyazı dosyası (yalnızca site içi /media/ altındaki .vtt dosyaları).
+/// Not: Postgres'te NULL değerler birbirinden farklı sayıldığı için çevirmen grubu olmayan kayıtların
+/// (kaynak, dil) benzersizliği migration'daki kısmi benzersiz indeksle (WHERE "translatorGroupId" IS NULL) sağlanır.
+model SubtitleTrack {
+  id                String   @id @default(cuid())
+  episodeSourceId   String
+  /// BCP-47 dil kodu: "tr", "en", "pt-BR"
+  lang              String
+  label             String
+  url               String
+  format            String   @default("vtt")
+  translatorGroupId String?
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  episodeSource   EpisodeSource    @relation(fields: [episodeSourceId], references: [id], onDelete: Cascade)
+  translatorGroup TranslatorGroup? @relation(fields: [translatorGroupId], references: [id], onDelete: SetNull)
+
+  @@unique([episodeSourceId, lang, translatorGroupId])
+  @@index([episodeSourceId])
+}
+
+model EpisodeSource {
+  id                String    @id @default(cuid())
+  episodeId         String
+  providerId        String
+  type              AudioType
+  quality           String?
+  translatorGroupId String?
+  url               String
+  brokenReports     Int       @default(0)
+  /// Bozuk kaynak bildirimi eşiği (5) aşılınca true olur; Aşama 7 moderasyon kuyruğu bu alanı okuyacak.
+  /// Kaynak otomatik devre dışı BIRAKILMAZ.
+  needsReview       Boolean   @default(false)
+  enabled           Boolean   @default(true)
+  /// Bölümün sitede izlenebilir hale geldiği an ("Son eklenen bölümler" bu alana göre sıralanır).
+  createdAt         DateTime  @default(now())
+
+  episode         Episode          @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  provider        ProviderConfig   @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  translatorGroup TranslatorGroup? @relation(fields: [translatorGroupId], references: [id], onDelete: SetNull)
+  subtitles       SubtitleTrack[]
+
+  @@index([episodeId])
+  @@index([createdAt])
+  @@index([translatorGroupId])
+}
+
+/// İntro/outro zamanları. Oy toplamı (`SkipTimeVote`) sorguyla hesaplanır; alan olarak saklanmaz.
+model SkipTime {
+  id        String     @id @default(cuid())
+  episodeId String
+  type      SkipType
+  startSec  Float
+  endSec    Float
+  source    SkipSource
+  createdAt DateTime   @default(now())
+
+  episode Episode        @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  votes   SkipTimeVote[]
+
+  @@index([episodeId, type])
+}
+
+model SkipTimeVote {
+  userId     String
+  skipTimeId String
+  /// +1 ya da -1 (uygulama katmanında doğrulanır)
+  value      Int
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skipTime SkipTime @relation(fields: [skipTimeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skipTimeId])
+}
+
+/* ------------------------------ Kullanıcı verisi ------------------------------ */
+
+model WatchProgress {
+  userId      String
+  episodeId   String
+  positionSec Int
+  durationSec Int
+  completed   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, episodeId])
+  @@index([userId, updatedAt])
+}
+
+model ListEntry {
+  userId    String
+  animeId   String
+  status    ListStatus?
+  favorite  Boolean     @default(false)
+  score     Int?
+  progress  Int         @default(0)
+  updatedAt DateTime    @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime Anime @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, animeId])
+  @@index([userId, status])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  episodeId String
+  userId    String
+  parentId  String?
+  body      String
+  isSpoiler Boolean   @default(false)
+  /// CommentLike kayıtlarıyla aynı işlemde güncellenen sayaç.
+  likeCount Int       @default(0)
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+  deletedAt DateTime?
+
+  episode Episode       @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[]     @relation("CommentReplies")
+  likes   CommentLike[]
+
+  @@index([episodeId, createdAt])
+  @@index([parentId])
+}
+
+model CommentLike {
+  userId    String
+  commentId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+}
+
+/// Kullanıcı başına bölüm başına tek tepki. Emoji listesi uygulama katmanında doğrulanır.
+model Reaction {
+  userId    String
+  episodeId String
+  emoji     String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, episodeId])
+  @@index([episodeId])
+}
+
+model EpisodeRating {
+  userId    String
+  episodeId String
+  /// 1-5 (uygulama katmanında doğrulanır)
+  stars     Int
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, episodeId])
+  @@index([episodeId])
+}
+
+model AnimeFollow {
+  userId  String
+  animeId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime Anime @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, animeId])
+  @@index([animeId])
+}
+
+model GroupFollow {
+  userId            String
+  translatorGroupId String
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translatorGroup TranslatorGroup @relation(fields: [translatorGroupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, translatorGroupId])
+  @@index([translatorGroupId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  userId     String
+  targetType ReportTarget
+  targetId   String
+  /// Kaynak bildirimlerinde: NOT_PLAYING | WRONG_EPISODE | BAD_QUALITY | BAD_SUBTITLE | OTHER
+  reason     String
+  /// İsteğe bağlı kısa not (en fazla 300 karakter; uygulama katmanında doğrulanır)
+  note       String?
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+/* ------------------------------ Mini oyun: Günlük Tahmin ------------------------------ */
+
+/// Günün bulmacası. İlk istekte oluşturulur; ipuçları ve cevap anlık görüntü olarak saklanır,
+/// böylece AniList değişse ya da ulaşılamasa da gün boyunca herkes aynı bulmacayı görür.
+model GamePuzzle {
+  id        String   @id @default(cuid())
+  /// Bulmaca günü (Europe/Istanbul saatiyle), "2026-11-09"
+  day       String   @unique
+  mediaId   Int
+  data      Json
+  createdAt DateTime @default(now())
+
+  plays GamePlay[]
+
+  @@index([mediaId])
+}
+
+/// Bir kullanıcının bir günlük oyunu. Tahminler sunucuda doğrulanır; puan sunucuda hesaplanır.
+model GamePlay {
+  userId     String
+  puzzleId   String
+  day        String
+  /// Haftalık sezon, "2026-W46"
+  season     String
+  guesses    Int[]     @default([])
+  solved     Boolean   @default(false)
+  finished   Boolean   @default(false)
+  score      Int       @default(0)
+  /// Bu oyunla birlikte art arda çözülen gün sayısı
+  streak     Int       @default(0)
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle GamePuzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, puzzleId])
+  @@index([season, score])
+  @@index([userId, day])
+}
+
+/// Ödülleri dağıtılmış sezonlar (aynı sezon iki kez ödüllendirilmesin).
+model GameSeason {
+  id        String   @id
+  awardedAt DateTime @default(now())
+}
+
+/// Sezon ödülü (yalnızca kozmetik). item: frame_gold | frame_silver | frame_bronze | name_gradient | name_color | title_champion
+model GameReward {
+  id        String   @id @default(cuid())
+  userId    String
+  season    String
+  rank      Int
+  item      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, season, item])
+  @@index([userId])
+}

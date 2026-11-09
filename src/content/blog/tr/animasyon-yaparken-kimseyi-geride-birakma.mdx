@@ -1,0 +1,29 @@
+---
+title: 'Animasyon Yaparken Kimseyi Geride Bırakma'
+description: 'prefers-reduced-motion ile hareketten rahatsız olan kullanıcılara saygı göstermenin pratik yolları.'
+date: '2026-03-30'
+tags: ['Erişilebilirlik', 'Framer Motion']
+---
+
+Animasyonlar siteye hayat verir, ama bazı kullanıcılar için baş dönmesi ya da dikkat dağınıklığı demektir. İşletim sistemi bu kullanıcılar için bir ayar sunar: **hareketi azalt**.
+
+## Ne yapmalı?
+
+1. CSS animasyonlarını `prefers-reduced-motion` medya sorgusuyla sadeleştir.
+2. Framer Motion kullanıyorsan uygulamayı `MotionConfig reducedMotion="user"` ile sar.
+3. Süs niteliğindeki efektleri (parçacıklar, düşen yapraklar) hiç render etme.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+## Bir ipucu
+
+Bilgi taşıyan animasyonları (örneğin bir formun gönderildiğini gösteren bildirim) kapatırken **bilginin kendisini** kaybetme. Hareket gider, mesaj kalır.
+
+> İyi animasyon, fark edilmeyen ama eksikliği hissedilen animasyondur.

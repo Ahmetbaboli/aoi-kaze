@@ -1,0 +1,33 @@
+---
+title: 'Drawing a Halftone Texture with CSS'
+description: 'How to make a halftone dot pattern with nothing but radial-gradient, no image files needed.'
+date: '2026-02-20'
+tags: ['CSS', 'Guide']
+---
+
+In print, grey tones are actually made of tiny dots (very visible in comics). This is called **halftone**. The good news: you do not need a single image for it.
+
+## The basic idea
+
+We draw a small circle with a `radial-gradient` and repeat it with `background-size`:
+
+```css title="halftone.css"
+.halftone {
+  background-image: radial-gradient(rgb(0 0 0 / 0.25) 1.5px, transparent 2px);
+  background-size: 8px 8px;
+}
+```
+
+## A pattern that fades toward a corner
+
+Adding a `mask-image` lets the pattern show up in only one corner:
+
+```css
+.halftone-corner {
+  mask-image: linear-gradient(135deg, transparent 55%, #000 100%);
+}
+```
+
+> Bigger dots make the tone darker, smaller dots make it lighter. Just like real print.
+
+With these few lines you can add texture to your cards, backgrounds and shadows.

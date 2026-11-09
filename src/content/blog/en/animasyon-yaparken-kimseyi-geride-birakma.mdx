@@ -1,0 +1,29 @@
+---
+title: 'Do Not Leave Anyone Behind When You Animate'
+description: 'Practical ways to respect users who are sensitive to motion using prefers-reduced-motion.'
+date: '2026-03-30'
+tags: ['Accessibility', 'Framer Motion']
+---
+
+Animations bring a site to life, but for some users they mean dizziness or distraction. Operating systems offer a setting for them: **reduce motion**.
+
+## What should you do?
+
+1. Simplify CSS animations with the `prefers-reduced-motion` media query.
+2. If you use Framer Motion, wrap the app in `MotionConfig reducedMotion="user"`.
+3. Do not render purely decorative effects (particles, falling leaves) at all.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+## One tip
+
+When you turn off animations that carry information (like a notification confirming a form was sent), do not lose **the information itself**. The motion goes away, the message stays.
+
+> Good animation is the kind you do not notice, but you feel its absence.

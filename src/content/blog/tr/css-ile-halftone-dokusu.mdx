@@ -1,0 +1,33 @@
+---
+title: 'CSS ile Halftone Dokusu Çizmek'
+description: 'Görsel dosyası olmadan, yalnızca radial-gradient ile halftone nokta deseni nasıl yapılır?'
+date: '2026-02-20'
+tags: ['CSS', 'Rehber']
+---
+
+Baskıda gri tonlar aslında küçük noktalardan oluşur (çizgi romanlarda bu çok belirgindir). Buna **halftone** denir. İyi haber: bunun için tek bir görsele ihtiyacın yok.
+
+## Temel fikir
+
+Bir `radial-gradient` ile küçük bir daire çizip `background-size` ile tekrar ettiriyoruz:
+
+```css title="halftone.css"
+.halftone {
+  background-image: radial-gradient(rgb(0 0 0 / 0.25) 1.5px, transparent 2px);
+  background-size: 8px 8px;
+}
+```
+
+## Köşeye doğru solan nokta deseni
+
+Bir `mask-image` ekleyerek desenin yalnızca bir köşede görünmesini sağlayabilirsin:
+
+```css
+.halftone-corner {
+  mask-image: linear-gradient(135deg, transparent 55%, #000 100%);
+}
+```
+
+> Noktaları büyütmek tonu koyulaştırır, küçültmek açar. Tıpkı gerçek baskıda olduğu gibi.
+
+Bu iki satırla kartlarına, arka planlarına ve gölgelerine kolayca doku katabilirsin.

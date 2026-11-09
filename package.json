@@ -1,0 +1,66 @@
+{
+  "name": "anisite-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:local": "node scripts/db-local.mjs",
+    "db:up": "docker compose up -d db",
+    "db:generate": "prisma generate",
+    "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
+    "db:deploy": "dotenv -e .env.local -- prisma migrate deploy",
+    "db:seed": "dotenv -e .env.local -- node prisma/seed.mjs",
+    "db:studio": "dotenv -e .env.local -- prisma studio",
+    "db:reset": "dotenv -e .env.local -- prisma migrate reset",
+    "db:verify": "node scripts/verify-db.mjs",
+    "test:auth": "node scripts/test-auth.mjs",
+    "test:auth:e2e": "node scripts/e2e-auth.mjs",
+    "test:watchlist": "node scripts/test-watchlist.mjs",
+    "test:profile": "node scripts/test-profile.mjs",
+    "test:catalog": "node scripts/test-catalog.mjs",
+    "test:game": "node scripts/test-game.mjs",
+    "media:hls": "node scripts/make-hls.mjs",
+    "doctor": "node scripts/doctor.mjs"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "2.11.3",
+    "@prisma/client": "^6.19.3",
+    "framer-motion": "^11.11.0",
+    "gray-matter": "^4.0.3",
+    "jszip": "^3.10.2",
+    "next": "^14.2.15",
+    "next-auth": "5.0.0-beta.32",
+    "next-mdx-remote": "^5.0.0",
+    "nodemailer": "8.0.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "server-only": "0.0.1",
+    "shiki": "^1.29.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
+    "@electric-sql/pglite-socket": "^0.2.14",
+    "@types/node": "^20.14.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.35",
+    "postcss": "^8.4.47",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  }
+}

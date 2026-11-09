@@ -1,0 +1,60 @@
+# Yerel veritabanı (geliştirme): "docker compose up -d db mailpit"  →  Postgres localhost:5432, Mailpit http://localhost:8025
+# Tüm uygulama (kendi sunucunda): "docker compose up -d --build"
+# Çalışma zamanı değişkenleri (webhook, Resend...) .env.local dosyasından okunur.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aoikaze}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aoikaze_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-aoikaze}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-aoikaze} -d ${POSTGRES_DB:-aoikaze}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Geliştirme e-postası: giriş linkleri gerçekten gönderilmez, http://localhost:8025 arayüzüne düşer.
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # web arayüzü
+
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
+        NEXT_PUBLIC_GISCUS_REPO: ${NEXT_PUBLIC_GISCUS_REPO:-}
+        NEXT_PUBLIC_GISCUS_REPO_ID: ${NEXT_PUBLIC_GISCUS_REPO_ID:-}
+        NEXT_PUBLIC_GISCUS_CATEGORY: ${NEXT_PUBLIC_GISCUS_CATEGORY:-}
+        NEXT_PUBLIC_GISCUS_CATEGORY_ID: ${NEXT_PUBLIC_GISCUS_CATEGORY_ID:-}
+        NEXT_PUBLIC_SOCIAL_GITHUB: ${NEXT_PUBLIC_SOCIAL_GITHUB:-}
+        NEXT_PUBLIC_SOCIAL_LINKEDIN: ${NEXT_PUBLIC_SOCIAL_LINKEDIN:-}
+        NEXT_PUBLIC_SOCIAL_TWITTER: ${NEXT_PUBLIC_SOCIAL_TWITTER:-}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL:-}
+        NEXT_PUBLIC_DISCORD_INVITE: ${NEXT_PUBLIC_DISCORD_INVITE:-}
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      # Konteyner içinden veritabanına servis adıyla (db) bağlanılır.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aoikaze}:${POSTGRES_PASSWORD:-aoikaze_dev}@db:5432/${POSTGRES_DB:-aoikaze}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+
+volumes:
+  pgdata:

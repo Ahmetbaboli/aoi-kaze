@@ -1,0 +1,309 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Tasarım jetonları. Değerler RGB kanalı olarak tutulur (Tailwind'in
+   opaklık eki için). Hex karşılıkları yanlarında yazıyor.
+------------------------------------------------------------------- */
+@layer base {
+  :root {
+    --primary: 225 29 72; /* #E11D48 gül kırmızısı: ana renk (beyaz yazıyla 4.7:1) */
+    --electric: 14 116 144; /* #0E7490 camgöbeği: ikincil */
+    --volt: 251 191 36; /* #FBBF24 amber: puan rozetleri ve uyarılar */
+    --night: 15 23 42; /* #0F172A: koyu paneller */
+
+    --bg: 248 250 252; /* #F8FAFC */
+    --fg: 15 23 42; /* #0F172A */
+    --surface: 255 255 255;
+    --line: 226 232 240; /* #E2E8F0 ince kontur */
+    --shadow: 15 23 42;
+    --muted: 71 85 105; /* #475569 (zeminde 7:1) */
+    --primary-text: 190 18 60; /* #BE123C: açık zeminde okunur ton */
+    --focus: 79 70 229;
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    --bg: 10 10 16; /* #0A0A10 */
+    --fg: 241 245 249;
+    --surface: 22 22 32; /* #161620 */
+    --night: 6 6 10;
+    --electric: 34 211 238;
+    --line: 43 43 58; /* #2B2B3A */
+    --shadow: 0 0 0;
+    --muted: 148 163 184; /* #94A3B8 */
+    --primary-text: 251 113 133; /* #FB7185 */
+    --focus: 251 113 133;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-bg font-body text-fg antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--focus));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: rgb(var(--primary));
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Başlıklar gövde fontunun kalın ağırlığıyla yazılır */
+  .font-display {
+    font-weight: 800;
+  }
+
+  /* Ekran dışındaki bölümlerin stil/yerleşim işini görünene kadar ertele */
+  .defer-render {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 26rem;
+  }
+
+  /* Yatay poster şeridi: ince kaydırma çubuğu */
+  .rail {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--muted) / 0.5) transparent;
+  }
+
+  /* Form alanları (select, input) */
+  .field {
+    width: 100%;
+    border: 1px solid rgb(var(--line));
+    border-radius: 0.5rem;
+    background: rgb(var(--surface));
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+    color: rgb(var(--fg));
+  }
+  .field:focus-visible {
+    border-color: rgb(var(--primary));
+  }
+
+  /* Kod blokları: Shiki çift tema (açık/koyu) CSS değişkenleriyle; site temasına göre seçilir */
+  .code-block {
+    --code-bg: 246 248 250;
+    background: rgb(var(--code-bg));
+  }
+  :root[data-theme='dark'] .code-block {
+    --code-bg: 13 17 23;
+  }
+  .code-block .shiki,
+  .code-block .shiki span {
+    color: var(--shiki-light);
+    background-color: transparent;
+  }
+  :root[data-theme='dark'] .code-block .shiki span {
+    color: var(--shiki-dark);
+  }
+  .code-block pre {
+    margin: 0;
+    overflow-x: auto;
+    padding: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  .code-block pre:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* Başlıklara atlanınca sabit navbar altında kalmasın */
+  .mdx-body h2,
+  .mdx-body h3 {
+    scroll-margin-top: 6rem;
+  }
+
+  /* MDX içerik tipografisi */
+  .mdx-body :not(pre) > code {
+    border-radius: 0.375rem;
+    background: rgb(var(--primary) / 0.12);
+    padding: 0.1em 0.4em;
+    font-size: 0.9em;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Animasyonlar: yalnızca CSS (JavaScript yüklenmese de içerik görünür kalır).
+   prefers-reduced-motion açıkken yukarıdaki genel kural süreleri sıfıra indirir.
+------------------------------------------------------------------- */
+@layer utilities {
+  .anim-page {
+    animation: page-in 0.3s ease-out both;
+  }
+  .anim-fade {
+    animation: fade-in 0.6s ease-out both;
+  }
+  .anim-hero {
+    animation: reveal-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+  .anim-stagger {
+    animation: reveal-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+  .anim-progress {
+    transform-origin: left;
+    animation: progress-fill 7s linear forwards;
+  }
+  .anim-kenburns {
+    animation: kenburns 12s linear both;
+  }
+  /* Ekrana girince belirir (desteklemeyen tarayıcılarda doğrudan görünür) */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+@keyframes progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Esere özel tema (detay sayfası). --primary ve --m-text-* değerleri
+   src/lib/media-theme.ts'te kontrast eşiğine göre hesaplanır ve satır
+   içi stil olarak verilir; burada yalnızca açık/koyu temaya göre seçilir.
+------------------------------------------------------------------- */
+.media-theme {
+  --primary-text: var(--m-text-light);
+  --focus: var(--m-text-light);
+}
+:root[data-theme='dark'] .media-theme {
+  --primary-text: var(--m-text-dark);
+  --focus: var(--m-text-dark);
+}
+.media-glow {
+  background: radial-gradient(60rem 28rem at 15% 0%, rgb(var(--m-glow) / 0.22), transparent 70%);
+}
+
+/* Türe göre hero dokusu (yalnızca süsleme, hareket yok). */
+.mood-eerie {
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px), radial-gradient(rgb(0 0 0 / 0.35) 1px, transparent 1px);
+  background-size: 3px 3px, 5px 5px;
+  background-position: 0 0, 1px 2px;
+  box-shadow: inset 0 0 12rem rgb(0 0 0 / 0.7);
+}
+.mood-speed {
+  background-image: repeating-linear-gradient(-28deg, rgb(255 255 255 / 0.09) 0 2px, transparent 2px 26px);
+}
+.mood-grid {
+  background-image: linear-gradient(rgb(var(--m-glow) / 0.25) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--m-glow) / 0.25) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.mood-sparkle {
+  background-image: radial-gradient(circle at 20% 30%, rgb(255 255 255 / 0.5) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 70% 20%, rgb(255 255 255 / 0.35) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 45% 70%, rgb(255 255 255 / 0.4) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 85% 60%, rgb(255 255 255 / 0.3) 0 1px, transparent 1.5px);
+  background-size: 180px 140px;
+}
+.mood-soft {
+  background-image: radial-gradient(28rem 14rem at 80% 30%, rgb(255 255 255 / 0.16), transparent 70%),
+    radial-gradient(20rem 12rem at 20% 70%, rgb(var(--m-glow) / 0.3), transparent 70%);
+}
+
+/* ------------------------------------------------------------------
+   Oyun ödülleri (yalnızca kozmetik): avatar çerçeveleri ve isim stilleri.
+   Animasyonlar prefers-reduced-motion açıkken genel kuralla durur.
+------------------------------------------------------------------- */
+.frame-gold,
+.frame-silver,
+.frame-bronze {
+  position: relative;
+  border-radius: 9999px;
+  padding: 3px;
+}
+.frame-gold {
+  background: conic-gradient(from var(--frame-angle, 0deg), #fde68a, #f59e0b, #fff7d6, #d97706, #fde68a);
+  box-shadow: 0 0 0 1px rgb(217 119 6 / 0.5), 0 0 18px rgb(245 158 11 / 0.55);
+  animation: frame-spin 6s linear infinite;
+}
+.frame-silver {
+  background: conic-gradient(#f8fafc, #94a3b8, #e2e8f0, #64748b, #f8fafc);
+  box-shadow: 0 0 0 1px rgb(100 116 139 / 0.5), 0 0 12px rgb(148 163 184 / 0.45);
+}
+.frame-bronze {
+  background: conic-gradient(#fed7aa, #c2410c, #fdba74, #9a3412, #fed7aa);
+  box-shadow: 0 0 0 1px rgb(154 52 18 / 0.5);
+}
+@property --frame-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes frame-spin {
+  to {
+    --frame-angle: 360deg;
+  }
+}
+.name-gradient {
+  background: linear-gradient(90deg, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #f59e0b);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: name-shine 5s linear infinite;
+}
+.name-color {
+  color: rgb(var(--electric));
+}
+@keyframes name-shine {
+  to {
+    background-position: 200% center;
+  }
+}

@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+.env*.local
+*.tsbuildinfo
+
+# Yerel HLS çıktısı ve indirilen kaynak filmler (scripts/make-hls.mjs)
+public/media
+media-src
+
+# PGlite yerel veritabanı (npm run db:local)
+.pglite
+
+# Yerel araç ayarları
+.claude/
