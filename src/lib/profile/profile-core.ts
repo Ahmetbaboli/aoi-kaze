@@ -76,7 +76,8 @@ export interface PublicProfile {
 export async function getProfile(db: PrismaClient, username: string): Promise<PublicProfile | null> {
   if (!/^[a-z0-9_]{1,20}$/i.test(username)) return null;
   const user = await db.user.findUnique({ where: { username: username.toLowerCase() } });
-  if (!user || !user.username) return null;
+  // Yasaklı kullanıcının profili yokmuş gibi davranılır (404).
+  if (!user || !user.username || user.bannedAt) return null;
   const list = await getListItems(db, user.id);
   return {
     id: user.id,

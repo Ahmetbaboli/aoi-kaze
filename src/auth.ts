@@ -48,6 +48,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter,
   providers: buildProviders(),
   callbacks: {
+    // Yasaklı kullanıcı giriş yapamaz (yasaklanınca açık oturumları da silinir). Yeni kullanıcıda kayıt henüz yoktur.
+    // OAuth'ta buradaki kimlik sağlayıcının kimliği olabilir: hem kimlikle hem e-postayla kontrol edilir.
+    async signIn({ user }) {
+      const email = user?.email?.trim().toLowerCase();
+      const or = [...(user?.id ? [{ id: user.id }] : []), ...(email ? [{ email }] : [])];
+      if (or.length === 0) return true;
+      const banned = await db.user.findFirst({ where: { OR: or, bannedAt: { not: null } }, select: { id: true } });
+      return banned ? '/giris?error=AccessDenied' : true;
+    },
     // Veritabanı oturumunda `user` her istekte veritabanından gelir: rol değişiklikleri hemen etkili olur.
     session({ session, user }) {
       const row = user as AdapterUser & { username?: string | null; role?: 'USER' | 'ADMIN'; locale?: string; avatarUrl?: string | null };

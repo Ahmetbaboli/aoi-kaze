@@ -51,6 +51,8 @@ enum SkipSource {
 enum ReportTarget {
   COMMENT
   SOURCE
+  /// Kullanıcı profili (ad, biyografi, görsel)
+  USER
 }
 
 enum ReportStatus {
@@ -90,6 +92,9 @@ model User {
   equippedFrame String?
   equippedName  String?
   equippedTitle String?
+  /// Yasaklama: doluysa giriş yapamaz, profili ve sıralamadaki yeri gizlenir.
+  bannedAt      DateTime?
+  banReason     String?
   createdAt     DateTime  @default(now())
 
   accounts          Account[]
@@ -108,6 +113,7 @@ model User {
   reports           Report[]
   gamePlays         GamePlay[]
   gameRewards       GameReward[]
+  adminActions      AdminAction[] @relation("AdminActionActor")
 }
 
 model Account {
@@ -457,10 +463,14 @@ model Report {
   note       String?
   status     ReportStatus @default(OPEN)
   createdAt  DateTime     @default(now())
+  /// Şikâyeti kapatan yönetici ve zamanı
+  resolvedById String?
+  resolvedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
+  @@index([targetType, targetId])
 }
 
 /* ------------------------------ Mini oyun: Günlük Tahmin ------------------------------ */
@@ -523,4 +533,23 @@ model GameReward {
 
   @@unique([userId, season, item])
   @@index([userId])
+}
+
+/* ------------------------------ Yönetim ------------------------------ */
+
+/// Yönetici işlem kaydı (kim, kime, ne yaptı). Silinmez; hedef kullanıcı silinse de kayıt kalır.
+model AdminAction {
+  id           String   @id @default(cuid())
+  actorId      String
+  /// İşlem yapılan kullanıcı (silinmiş olabilir; ilişki yok, yalnızca kimlik)
+  targetUserId String?
+  /// reset_username | clear_bio | reset_images | hide_profile | ban | unban | clear_scores | resolve_report | dismiss_report
+  action       String
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  actor User @relation("AdminActionActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([targetUserId])
 }

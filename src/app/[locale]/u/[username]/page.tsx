@@ -12,6 +12,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { StyledName, TitleBadge } from '@/components/game/Cosmetics';
+import ReportButton from '@/components/profile/ReportButton';
 
 const FRAME_CLASS: Record<string, string> = { frame_gold: 'frame-gold', frame_silver: 'frame-silver', frame_bronze: 'frame-bronze' };
 import Link from '@/components/ui/LocLink';
@@ -145,10 +146,21 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               @{profile.username} · {fmt(p.joined, { date: joined })}
             </p>
           </div>
-          {isOwner && (
+          {isOwner ? (
             <Button href="/hesap" variant="secondary" className="self-start sm:self-end">
               {p.edit}
             </Button>
+          ) : (
+            profile.role !== 'ADMIN' && (
+              <div className="self-start sm:self-end">
+                <ReportButton
+                  username={profile.username}
+                  signedIn={!!session?.user}
+                  loginHref={`/giris?callbackUrl=${encodeURIComponent(`/${locale}/u/${profile.username}`)}`}
+                  content={c.report}
+                />
+              </div>
+            )
           )}
         </div>
 

@@ -202,13 +202,13 @@ export async function getLeaderboard(db: PrismaClient, season: string, limit = R
   const solvedBy = new Map(solvedGroups.map((g) => [g.userId, g._count._all]));
   const users = await db.user.findMany({
     where: { id: { in: groups.map((g) => g.userId) } },
-    select: { id: true, username: true, profilePublic: true, avatarUrl: true, image: true, equippedFrame: true, equippedName: true, equippedTitle: true },
+    select: { id: true, username: true, profilePublic: true, avatarUrl: true, image: true, equippedFrame: true, equippedName: true, equippedTitle: true, bannedAt: true },
   });
   const userBy = new Map(users.map((u) => [u.id, u]));
 
   return groups
     .map((g) => ({ userId: g.userId, score: g._sum.score ?? 0, solved: solvedBy.get(g.userId) ?? 0, played: g._count._all }))
-    .filter((row) => row.score > 0)
+    .filter((row) => row.score > 0 && userBy.has(row.userId) && !userBy.get(row.userId)!.bannedAt)
     .sort((a, b) => b.score - a.score || b.solved - a.solved || a.played - b.played || a.userId.localeCompare(b.userId))
     .slice(0, limit)
     .map((row, index) => {
