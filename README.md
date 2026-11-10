@@ -92,7 +92,9 @@ Yönetici yapmak için e-postayı `ADMIN_EMAILS` listesine ekle (virgülle ayrı
 - **Giriş e-postaları geliştirmede http://localhost:8025 adresine düşer** (Mailpit: `docker compose up -d mailpit`, SMTP `localhost:1025`).
 - Korumalı sayfalar (`/hesap`, `/admin`): middleware yalnızca oturum çerezinin varlığına bakar; asıl yetki kontrolü sunucu bileşenlerinde (`requireUser`, `requireAdmin` — `src/lib/auth-guards.ts`).
 - Kimlik mantığı testi: `npm run test:auth` (bellekte PostgreSQL ile kullanıcı oluşturma, ADMIN_EMAILS, oturum ve yetki kontrolü).
-- Diğer testler: `npm run test:watchlist` (Listem senkronu), `npm run test:profile` (seviye, rozetler, küfür filtresi, profil kaydı), `npm run test:catalog` (spoiler ayrıştırıcı, tema kontrastı), `npm run test:game` (oyun kuralları, hile koruması, sezon ödülleri).
+- Diğer testler: `npm run test:watchlist` (Listem senkronu), `npm run test:profile` (seviye, rozetler, küfür filtresi, profil kaydı), `npm run test:catalog` (spoiler ayrıştırıcı, tema kontrastı), `npm run test:game` (oyun kuralları, hile koruması, sezon ödülleri), `npm run test:admin` (şikâyet, yasaklama, işlem kaydı).
+- Hepsi birden: `npm test` · Lint: `npm run lint` (ESLint, `next/core-web-vitals`).
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) her push ve pull request'te tip kontrolü, lint, `npm test`, üretim derlemesi ve `test:auth:e2e` çalıştırır. Node 24 gerekir (testler `.ts` dosyalarını doğrudan içe aktarır); gizli anahtar gerekmez.
 
 ## Klasör yapısı
 

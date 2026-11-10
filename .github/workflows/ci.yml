@@ -1,0 +1,54 @@
+# Her push ve pull request'te: tip kontrolü, lint, birim testleri, üretim derlemesi ve uçtan uca giriş testi.
+# Testler bellekte PostgreSQL (PGlite) kullanır: dış veritabanı ya da gizli anahtar gerekmez.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Yalnızca CI için sahte değerler (gerçek gizli anahtar değildir).
+      AUTH_SECRET: ci-only-not-a-real-secret
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Testler .ts dosyalarını doğrudan içe aktarır (Node'un yerleşik TypeScript desteği): Node 24 gerekir.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Bağımlılıklar
+        run: npm ci
+
+      - name: Prisma istemcisi
+        run: npx prisma generate
+
+      - name: Tip kontrolü
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Birim testleri
+        run: npm test
+
+      - name: Üretim derlemesi
+        run: npx next build
+
+      - name: Uçtan uca giriş testi
+        run: npm run test:auth:e2e

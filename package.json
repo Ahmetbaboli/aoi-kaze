@@ -7,6 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "lint": "next lint --dir src --dir scripts --dir prisma",
+    "test": "npm run test:auth && npm run test:watchlist && npm run test:profile && npm run test:catalog && npm run test:game && npm run test:admin",
     "db:local": "node scripts/db-local.mjs",
     "db:up": "docker compose up -d db",
     "db:generate": "prisma generate",

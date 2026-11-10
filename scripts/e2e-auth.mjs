@@ -136,7 +136,7 @@ try {
   /* ---------- requireUser ---------- */
   r = await get('/tr/hesap', 'e2e-member');
   let html = await r.text();
-  check('geçerli oturum: /tr/hesap 200 ve kullanıcı bilgisi', r.status === 200 && html.includes('@octocat') && html.includes('member@example.com'), `${r.status}`);
+  check('geçerli oturum: /tr/hesap 200 ve kullanıcı bilgisi', r.status === 200 && html.includes('value="octocat"') && html.includes('member@example.com'), `${r.status}`);
   r = await get('/tr/hesap', 'bogus-token');
   check('sahte çerez middleware’i geçer ama requireUser giriş sayfasına yollar', r.status === 307 && location(r).includes('/tr/giris'), `${r.status} ${location(r)}`);
   r = await get('/tr/hesap', 'e2e-expired');
